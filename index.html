@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stick Figure Level Devil</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #121212;
+            font-family: 'Arial', sans-serif;
+        }
+        #gameCanvas {
+            background-color: #333;
+            display: block;
+            margin: 0 auto;
+        }
+        .controls {
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+        #deathCounter {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        #levelInfo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        #startButton {
+            background-color: #e53e3e;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 24px;
+            cursor: pointer;
+            margin-top: 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #startButton:hover {
+            background-color: #c53030;
+        }
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        #restartButton {
+            background-color: #e53e3e;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 24px;
+            cursor: pointer;
+            margin-top: 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #restartButton:hover {
+            background-color: #c53030;
+        }
+        #levelCompleteScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        #nextLevelButton {
+            background-color: #38a169;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 24px;
+            cursor: pointer;
+            margin-top: 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #nextLevelButton:hover {
+            background-color: #2f855a;
+        }
+        .mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            box-sizing: border-box;
+            z-index: 5;
+        }
+        .mobile-controls button {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            touch-action: manipulation;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #mobileJump {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+        }
+    </style>
+</head>
+<body class="bg-gray-900">
+    <div id="gameContainer" class="w-full h-screen flex flex-col items-center justify-center">
+        <canvas id="gameCanvas"></canvas>
+        <div id="deathCounter">Deaths: 0</div>
+        <div id="levelInfo">Level: 1</div>
+        
+        <div id="startScreen">
+            <h1 class="text-white text-4xl mb-4">Stick Figure Level Devil</h1>
+            <p class="text-white text-xl mb-8">Navigate through tricky levels and avoid traps!</p>
+            <button id="startButton">Start Game</button>
+        </div>
+        
+        <div id="gameOverScreen">
+            <h1 class="text-white text-4xl mb-4">Game Over</h1>
+            <p class="text-white text-xl mb-8">Try again!</p>
+            <button id="restartButton">Restart Level</button>
+        </div>
+        
+        <div id="levelCompleteScreen">
+            <h1 class="text-white text-4xl mb-4">Level Complete!</h1>
+            <p class="text-white text-xl mb-8">Good job!</p>
+            <button id="nextLevelButton">Next Level</button>
+        </div>
+        
+        <div class="mobile-controls hidden">
+            <div class="left-controls">
+                <button id="mobileLeft">&larr;</button>
+                <button id="mobileRight">&rarr;</button>
+            </div>
+            <button id="mobileJump">&uarr;</button>
+        </div>
+    </div>
+
+    <script>
+        // Game settings and variables
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const deathCounter = document.getElementById('deathCounter');
+        const levelInfo = document.getElementById('levelInfo');
+        const startScreen = document.getElementById('startScreen');
+        const startButton = document.getElementById('startButton');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const restartButton = document.getElementById('restartButton');
+        const levelCompleteScreen = document.getElementById('levelCompleteScreen');
+        const nextLevelButton = document.getElementById('nextLevelButton');
+        const mobileControls = document.querySelector('.mobile-controls');
+        
+        // Set canvas dimensions
+        function resizeCanvas() {
+            const container = document.getElementById('gameContainer');
+            const maxWidth = Math.min(800, window.innerWidth - 20);
+            const maxHeight = Math.min(600, window.innerHeight - 20);
+            
+            canvas.width = maxWidth;
+            canvas.height = maxHeight;
+            
+            // Only show mobile controls on touch devices
+            if ('ontouchstart' in window) {
+                mobileControls.classList.remove('hidden');
+            }
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Game state
+        let gameStarted = false;
+        let deaths = 0;
+        let currentLevel = 1;
+        let maxLevel = 3;
+        let player;
+        let platforms = [];
+        let traps = [];
+        let goals = [];
+        let keys = [];
+        let collectedKeys = [];
+        
+        // Player properties
+        class Player {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 20;
+                this.height = 40;
+                this.velocityX = 0;
+                this.velocityY = 0;
+                this.speed = 5;
+                this.jumpForce = 11;
+                this.gravity = 0.6;
+                this.isJumping = true;
+                this.isAlive = true;
+                this.isImmune = true; // Start with immunity
+                this.immuneTime = 2500; // 2 seconds of immunity at start
+                this.immuneStartTime = Date.now();
+                this.blinkInterval = null;
+                this.visible = true;
+            }
+            
+            update() {
+                if (!this.isAlive) return;
+                
+                // Apply gravity
+                this.velocityY += this.gravity;
+                
+                // Apply horizontal movement
+                this.x += this.velocityX;
+                
+                // Check platform collisions before applying vertical movement
+                let onGround = false;
+                platforms.forEach(platform => {
+                    if (this.isColliding(platform) && this.y + this.height <= platform.y + this.velocityY) {
+                        this.y = platform.y - this.height;
+                        this.velocityY = 0;
+                        onGround = true;
+                    }
+                });
+                
+                // Apply vertical movement
+                this.y += this.velocityY;
+                
+                // Reset jumping state if on ground
+                if (onGround) {
+                    this.isJumping = false;
+                }
+                
+                // Check if player is out of bounds
+                if (this.y > canvas.height) {
+                    this.die();
+                }
+                
+                // Update immunity status
+                if (this.isImmune && Date.now() - this.immuneStartTime > this.immuneTime) {
+                    this.isImmune = false;
+                    clearInterval(this.blinkInterval);
+                    this.visible = true;
+                }
+                
+                // Check trap collisions
+                if (!this.isImmune) {
+                    traps.forEach(trap => {
+                        if (this.isColliding(trap)) {
+                            this.die();
+                        }
+                    });
+                }
+                
+                // Check goal collisions
+                goals.forEach(goal => {
+                    if (this.isColliding(goal)) {
+                        this.completeLevel();
+                    }
+                });
+                
+                // Check key collisions
+                keys.forEach((key, index) => {
+                    if (!key.collected && this.isColliding(key)) {
+                        key.collected = true;
+                        collectedKeys.push(key);
+                    }
+                });
+            }
+            
+            startImmunity() {
+                this.isImmune = true;
+                this.immuneStartTime = Date.now();
+                
+                // Create blinking effect
+                clearInterval(this.blinkInterval);
+                this.blinkInterval = setInterval(() => {
+                    this.visible = !this.visible;
+                }, 100);
+            }
+            
+            draw() {
+                if (!this.isAlive || !this.visible) return;
+                
+                // Draw stick figure
+                ctx.strokeStyle = this.isImmune ? 'rgba(0, 255, 255, 0.8)' : 'white';
+                ctx.lineWidth = 2;
+                
+                // Head
+                ctx.beginPath();
+                ctx.arc(this.x + this.width/2, this.y + 10, 8, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Body
+                ctx.beginPath();
+                ctx.moveTo(this.x + this.width/2, this.y + 18);
+                ctx.lineTo(this.x + this.width/2, this.y + 30);
+                ctx.stroke();
+                
+                // Arms
+                ctx.beginPath();
+                ctx.moveTo(this.x + this.width/2 - 10, this.y + 22);
+                ctx.lineTo(this.x + this.width/2 + 10, this.y + 22);
+                ctx.stroke();
+                
+                // Legs
+                ctx.beginPath();
+                ctx.moveTo(this.x + this.width/2, this.y + 30);
+                ctx.lineTo(this.x + this.width/2 - 8, this.y + 40);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(this.x + this.width/2, this.y + 30);
+                ctx.lineTo(this.x + this.width/2 + 8, this.y + 40);
+                ctx.stroke();
+            }
+            
+            jump() {
+                if (!this.isJumping && this.isAlive) {
+                    this.velocityY = -this.jumpForce;
+                    this.isJumping = false;
+                }
+            }
+            
+            die() {
+                if (this.isImmune) return;
+                
+                this.isAlive = false;
+                deaths++;
+                deathCounter.textContent = `Deaths: ${deaths}`;
+                setTimeout(() => {
+                    gameOverScreen.style.display = 'flex';
+                }, 500);
+            }
+            
+            completeLevel() {
+                levelCompleteScreen.style.display = 'flex';
+            }
+            
+            isColliding(obj) {
+                return this.x < obj.x + obj.width &&
+                       this.x + this.width > obj.x &&
+                       this.y < obj.y + obj.height &&
+                       this.y + this.height > obj.y;
+            }
+        }
+        
+        // Platform class
+        class Platform {
+            constructor(x, y, width, height, color = '#8B4513') {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.color = color;
+            }
+            
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                
+                // Add some detail to platforms
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(this.x, this.y, this.width, this.height);
+            }
+        }
+        
+        // Trap class
+        class Trap {
+            constructor(x, y, width, height, type = 'spike') {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.type = type;
+            }
+            
+            draw() {
+                if (this.type === 'spike') {
+                    ctx.fillStyle = '#FF5555';
+                    
+                    // Draw multiple spikes
+                    const spikeWidth = 10;
+                    const spikeCount = Math.floor(this.width / spikeWidth);
+                    
+                    for (let i = 0; i < spikeCount; i++) {
+                        const spikeX = this.x + i * spikeWidth;
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(spikeX, this.y + this.height);
+                        ctx.lineTo(spikeX + spikeWidth / 2, this.y);
+                        ctx.lineTo(spikeX + spikeWidth, this.y + this.height);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                } else if (this.type === 'saw') {
+                    ctx.fillStyle = '#FF0000';
+                    ctx.beginPath();
+                    ctx.arc(this.x + this.width/2, this.y + this.height/2, this.width/2, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Draw saw teeth
+                    ctx.strokeStyle = 'yellow';
+                    ctx.lineWidth = 2;
+                    const centerX = this.x + this.width/2;
+                    const centerY = this.y + this.height/2;
+                    const radius = this.width/2;
+                    
+                    for (let i = 0; i < 8; i++) {
+                        const angle = i * Math.PI / 4;
+                        ctx.beginPath();
+                        ctx.moveTo(centerX, centerY);
+                        ctx.lineTo(
+                            centerX + Math.cos(angle) * radius,
+                            centerY + Math.sin(angle) * radius
+                        );
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+        
+        // Goal class
+        class Goal {
+            constructor(x, y, width, height) {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+            }
+            
+            draw() {
+                ctx.fillStyle = '#66FF66';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                
+                // Add a flag
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(this.x + this.width/2 - 2, this.y - 20, 4, 20);
+                ctx.fillStyle = '#FF0000';
+                ctx.beginPath();
+                ctx.moveTo(this.x + this.width/2, this.y - 20);
+                ctx.lineTo(this.x + this.width/2 + 15, this.y - 15);
+                ctx.lineTo(this.x + this.width/2, this.y - 10);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+        
+        // Key class
+        class Key {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 15;
+                this.height = 15;
+                this.collected = false;
+            }
+            
+            draw() {
+                if (this.collected) return;
+                
+                ctx.fillStyle = '#FFD700';
+                
+                // Draw key head
+                ctx.beginPath();
+                ctx.arc(this.x + this.width/2, this.y + this.height/4, this.width/4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw key body
+                ctx.fillRect(this.x + this.width/2 - 2, this.y + this.height/4, 4, this.height/2);
+                
+                // Draw key teeth
+                ctx.fillRect(this.x + this.width/2, this.y + this.height/2, this.width/4, this.height/6);
+            }
+        }
+        
+        // Level design
+        function loadLevel(level) {
+            platforms = [];
+            traps = [];
+            goals = [];
+            keys = [];
+            collectedKeys = [];
+            
+            levelInfo.textContent = `Level: ${level}`;
+            
+            switch(level) {
+                case 1:
+                    // Start area is always safe - added a safe platform at the beginning
+                    player = new Player(55, canvas.height - 200);
+                    
+                    // Basic platforms - ensure starting position is safe
+                    platforms.push(new Platform(70, canvas.height - 160, 10, 20));
+                    platforms.push(new Platform(200, canvas.height - 160, 150, 20));
+                    platforms.push(new Platform(420, canvas.height - 160, 50, 20));
+                    platforms.push(new Platform(660, canvas.height - 160, 150, 20));
+                    
+                    // Add some traps - but none at starting area
+                    traps.push(new Trap(75, canvas.height - 170, 20, 20, 'spike'));
+                    traps.push(new Trap(400, canvas.height - 170, 20, 100, 'spike'));
+                    traps.push(new Trap(650, canvas.height - 170, 25, 20, 'spike'));
+                    
+                    // Add a goal
+                    goals.push(new Goal(750, canvas.height - 230, 20, 20));
+                    
+                    traps.push(new MovingSaw(350, canvas.height - 230, 100, 100, 10));
+                    // Add a key
+                    keys.push(new Key(350, canvas.height - 20));
+                    break;
+                    
+                case 2:
+                    player = new Player(50, canvas.height - 200);
+                    
+                    // More complex platforms
+                    platforms.push(new Platform(20, canvas.height - 160, 100, 20));
+                    platforms.push(new Platform(200, canvas.height - 220, 100, 20));
+                    platforms.push(new Platform(350, canvas.height - 280, 100, 20));
+                    platforms.push(new Platform(500, canvas.height - 220, 100, 20));
+                    platforms.push(new Platform(650, canvas.height - 160, 100, 20));
+                    
+                    // Add floor
+                    platforms.push(new Platform(0, canvas.height - 20, canvas.width, 20, '#555'));
+                    
+                    // Add more traps - none at starting position
+                    traps.push(new Trap(180, canvas.height - 80, 525, 20, 'spike'));
+                    traps.push(new Trap(330, canvas.height - 360, 70, 650, 'spike'));
+                    traps.push(new Trap(490, canvas.height - 370, 100, 200, 'spike'));
+                    traps.push(new Trap(640, canvas.height - 340, 200, 100, 'spike'));
+                    traps.push(new Trap(150, 110, 220, 220, 'spike'));
+                    traps.push(new Trap(380, 140, 100, 100, 'spike'));
+                    traps.push(new Trap(330, 270, 150, 20, 'spike'));
+                    traps.push(new Trap(230, 120, 420, 220, 'spike'));
+   
+                    // Add a goal
+                    goals.push(new Goal(670, canvas.height - 230, 20, 20));
+                    
+                    // Add keys
+                    keys.push(new Key(250, canvas.height - 260));
+                    keys.push(new Key(550, canvas.height - 260));
+                    break;
+                    
+                case 3:
+                    player = new Player(50, 100);
+                    
+                    // Vertical level
+                    platforms.push(new Platform(20, 150, 100, 20));
+                    platforms.push(new Platform(150, 220, 100, 20));
+                    platforms.push(new Platform(50, 290, 100, 20));
+                    platforms.push(new Platform(200, 360, 100, 20));
+                    platforms.push(new Platform(300, 430, 100, 20));
+                    platforms.push(new Platform(450, 220, 100, 20));
+                    platforms.push(new Platform(600, 150, 100, 20));
+                    
+                    
+                    
+                    // Add tricky traps
+                    traps.push(new Trap(230, 210, 320, 120, 'spike'));
+                    traps.push(new DisappearingPlatform(50, 100, 100, 20));
+                    traps.push(new Trap(80, 140, 180, 80, 'spike'));
+
+                    
+                    // Add moving saw traps
+                    traps.push(new MovingSaw(70, 70, 80, 80, 10));
+                    traps.push(new MovingSaw(800, 300, 50, 200, -10));
+                    traps.push(new MovingSaw(700, 50, 80, 80, -10));
+                    traps.push(new MovingSaw(380, canvas.height - 280, 90, 90, 8));
+                    traps.push(new MovingSaw(350, canvas.height - 350, 70, 70, 8));
+                    // Add a goal
+                    goals.push(new Goal(750, 100, 10, 20));
+                    
+                    // Add keys
+                    keys.push(new Key(100, 100));
+                    keys.push(new Key(500, 180));
+                    keys.push(new Key(350, 330));
+                    break;
+            }
+            
+            // Start immunity period
+            player.startImmunity();
+        }
+        
+        // Special trap types
+        class MovingSaw extends Trap {
+            constructor(x, y, width, height, speed) {
+                super(x, y, width, height, 'saw');
+                this.initialX = x;
+                this.speed = speed;
+                this.range = 300;
+            }
+            
+            update() {
+                this.x += this.speed;
+                
+                if (this.x > this.initialX + this.range || this.x < this.initialX - this.range) {
+                    this.speed = -this.speed;
+                }
+            }
+        }
+        
+        class DisappearingPlatform extends Platform {
+            constructor(x, y, width, height) {
+                super(x, y, width, height, '#AA6633');
+                this.visible = true;
+                this.alpha = 1;
+                this.disappearing = false;
+            }
+            
+            draw() {
+                if (!this.visible) return;
+                
+                ctx.globalAlpha = this.alpha;
+                super.draw();
+                ctx.globalAlpha = 1;
+            }
+            
+            update() {
+                if (player.isColliding(this) && !this.disappearing) {
+                    this.disappearing = true;
+                    setTimeout(() => {
+                        this.fadeOut();
+                    }, 500);
+                }
+            }
+            
+            fadeOut() {
+                if (this.alpha > 0) {
+                    this.alpha -= 0.05;
+                    setTimeout(() => this.fadeOut(), 50);
+                } else {
+                    this.visible = false;
+                }
+            }
+        }
+        
+        // Input handling
+        const keys_pressed = {};
+        
+        document.addEventListener('keydown', function(event) {
+            keys_pressed[event.key] = true;
+            
+            // Jump with space or up
+            if ((event.key === ' ' || event.key === 'ArrowUp' || event.key === 'w') && player) {
+                player.jump();
+            }
+        });
+        
+        document.addEventListener('keyup', function(event) {
+            keys_pressed[event.key] = false;
+        });
+        
+        // Mobile controls
+        if ('ontouchstart' in window) {
+            document.getElementById('mobileLeft').addEventListener('touchstart', function() {
+                keys_pressed['ArrowLeft'] = true;
+            });
+            
+            document.getElementById('mobileLeft').addEventListener('touchend', function() {
+                keys_pressed['ArrowLeft'] = false;
+            });
+            
+            document.getElementById('mobileRight').addEventListener('touchstart', function() {
+                keys_pressed['ArrowRight'] = true;
+            });
+            
+            document.getElementById('mobileRight').addEventListener('touchend', function() {
+                keys_pressed['ArrowRight'] = false;
+            });
+            
+            document.getElementById('mobileJump').addEventListener('touchstart', function() {
+                if (player) player.jump();
+            });
+        }
+        
+        // Game loop
+        function gameLoop() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (gameStarted) {
+                // Handle player movement
+                if (player && player.isAlive) {
+                    // Left movement
+                    if (keys_pressed['ArrowLeft'] || keys_pressed['a']) {
+                        player.velocityX = -player.speed;
+                    }
+                    // Right movement
+                    else if (keys_pressed['ArrowRight'] || keys_pressed['d']) {
+                        player.velocityX = player.speed;
+                    }
+                    // No horizontal movement
+                    else {
+                        player.velocityX = 0;
+                    }
+                    
+                    player.update();
+                }
+                
+                // Update movable objects
+                traps.forEach(trap => {
+                    if (trap.update) {
+                        trap.update();
+                    }
+                });
+                
+                // Draw background
+                ctx.fillStyle = '#333';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw level elements
+                platforms.forEach(platform => platform.draw());
+                traps.forEach(trap => trap.draw());
+                goals.forEach(goal => goal.draw());
+                keys.forEach(key => key.draw());
+                
+                // Draw player
+                if (player) {
+                    player.draw();
+                }
+                
+                // Draw collected keys
+                ctx.fillStyle = 'white';
+                ctx.font = '14px Arial';
+                ctx.fillText(`Keys: ${collectedKeys.length}/${keys.length}`, 10, 40);
+            }
+            
+            // Continue the game loop
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Start the game
+        startButton.addEventListener('click', function() {
+            startScreen.style.display = 'none';
+            gameStarted = true;
+            loadLevel(currentLevel);
+            gameLoop();
+        });
+        
+        // Restart the level
+        restartButton.addEventListener('click', function() {
+            gameOverScreen.style.display = 'none';
+            loadLevel(currentLevel);
+        });
+        
+        // Go to next level
+        nextLevelButton.addEventListener('click', function() {
+            levelCompleteScreen.style.display = 'none';
+            
+            if (currentLevel < maxLevel) {
+                currentLevel++;
+                loadLevel(currentLevel);
+            } else {
+                // Game complete
+                alert('Congratulations! You completed all levels!');
+                currentLevel = 1;
+                deaths = 0;
+                deathCounter.textContent = `Deaths: ${deaths}`;
+                loadLevel(currentLevel);
+            }
+        });
+        
+        // Initialize game
+        gameLoop();
+    </script>
+</body>
+</html>
