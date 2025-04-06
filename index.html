@@ -221,7 +221,7 @@
         let gameStarted = false;
         let deaths = 0;
         let currentLevel = 1;
-        let maxLevel = 3;
+        let maxLevel = 4;
         let player;
         let platforms = [];
         let traps = [];
@@ -244,7 +244,7 @@
                 this.isJumping = true;
                 this.isAlive = true;
                 this.isImmune = true; // Start with immunity
-                this.immuneTime = 2000; // 2 seconds of immunity at start
+                this.immuneTime = 10000; // 2 seconds of immunity at start
                 this.immuneStartTime = Date.now();
                 this.blinkInterval = null;
                 this.visible = true;
@@ -613,7 +613,35 @@
                     traps.push(new MovingSaw(380, canvas.height - 280, 90, 90, 8));
                     traps.push(new MovingSaw(350, canvas.height - 350, 70, 70, 8));
                     // Add a goal
-                    goals.push(new Goal(750, 100, 10, 20));
+                    goals.push(new Goal(650, 100, 10, 20));
+                    
+                    // Add keys
+                    keys.push(new Key(100, 100));
+                    keys.push(new Key(500, 180));
+                    keys.push(new Key(350, 330));
+                    break;
+
+                case 4:
+                    player = new Player(90, 100);
+                    
+                    // Vertical level
+                    platforms.push(new Platform(570, 90, 200, 10));
+                    platforms.push(new Platform(70, 90, 100, 10));
+
+                    
+                    
+                    // Add tricky traps
+                    traps.push(new DisappearingPlatform(750, 90, 200, 10));
+                    traps.push(new DisappearingPlatform(170, 90, 20, 10));
+                    
+
+                    
+                    // Add moving saw traps
+                    traps.push(new MovingSaw(70, 80, 80, 80, 10));
+                    traps.push(new MovingSaw(800, 150, 50, 50, -10));
+    
+                    // Add a goal
+                    goals.push(new Goal(750, 200, 10, 20));
                     
                     // Add keys
                     keys.push(new Key(100, 100));
@@ -665,7 +693,7 @@
                     this.disappearing = true;
                     setTimeout(() => {
                         this.fadeOut();
-                    }, 500);
+                    }, 50);
                 }
             }
             
@@ -810,3 +838,4 @@
     </script>
 </body>
 </html>
+
